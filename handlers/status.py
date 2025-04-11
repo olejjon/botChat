@@ -378,7 +378,8 @@ async def back_to_list_handler(callback: types.CallbackQuery):
                 text=f"#{ticket['ticket_id']} - {created_at.strftime('%d.%m %H:%M')}",
                 callback_data=f"view_{ticket['ticket_id']}",
             )
-        kb.adjust(2)
+        kb.button(text="🏠 На главную", callback_data="back_to_main")
+        kb.adjust(2, 1)
 
         # 4. Отправляем новое сообщение со списком
         await callback.message.answer(
