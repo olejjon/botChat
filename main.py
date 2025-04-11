@@ -7,6 +7,7 @@ from database.crud import Database
 from handlers import common, registration, tickets, status, admin_commands
 
 from config import Config
+
 # Принудительно инициализируем синхронизацию
 config = Config()
 

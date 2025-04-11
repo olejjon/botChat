@@ -276,14 +276,17 @@ class Database:
     def sync_admins(self, admin_ids: list[int]):
         """Синхронизирует список админов с базой данных"""
         # Сначала сбрасываем все флаги админов
-        self.cursor.execute('UPDATE users SET is_admin = FALSE')
+        self.cursor.execute("UPDATE users SET is_admin = FALSE")
 
         # Устанавливаем флаги для текущих админов
         for admin_id in admin_ids:
-            self.cursor.execute('''
+            self.cursor.execute(
+                """
             INSERT OR REPLACE INTO users 
             (user_id, is_admin) 
             VALUES (?, TRUE)
-            ''', (admin_id,))
+            """,
+                (admin_id,),
+            )
 
         self.conn.commit()

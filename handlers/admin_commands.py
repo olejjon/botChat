@@ -6,7 +6,7 @@ from config import Config
 import logging
 
 router = Router()
-db = Database('support_bot.db')
+db = Database("support_bot.db")
 
 
 async def verify_admin(message: Message) -> bool:
@@ -24,6 +24,7 @@ async def verify_admin(message: Message) -> bool:
     # Проверяем наличие прав в БД
     return db.is_admin(user_id)
 
+
 async def change_status(message: Message, ticket_id: int, new_status: str, bot: Bot):
     """Общая функция изменения статуса с проверкой прав"""
     if not db.is_admin(message.from_user.id):
@@ -35,16 +36,18 @@ async def change_status(message: Message, ticket_id: int, new_status: str, bot: 
             await message.reply(f"❌ Заявка #{ticket_id} не найдена")
             return
 
-        old_status = db.get_ticket_details(ticket_id)['status']
+        old_status = db.get_ticket_details(ticket_id)["status"]
         db.update_ticket_status(ticket_id, new_status, bot)
 
         status_names = {
-            'open': 'открыта',
-            'in_progress': 'в работе',
-            'resolved': 'решена',
-            'closed': 'закрыта'
+            "open": "открыта",
+            "in_progress": "в работе",
+            "resolved": "решена",
+            "closed": "закрыта",
         }
-        await message.reply(f"✅ Заявка #{ticket_id} помечена как {status_names[new_status]}")
+        await message.reply(
+            f"✅ Заявка #{ticket_id} помечена как {status_names[new_status]}"
+        )
     except Exception as e:
         logging.error(f"Ошибка изменения статуса: {e}")
         await message.reply("⚠️ Не удалось изменить статус")
@@ -66,12 +69,12 @@ async def handle_ticket_command(message: Message):
             await message.reply(f"❌ Заявка #{ticket_id} не найдена")
             return
 
-        user = db.get_user(ticket['user_id'])
+        user = db.get_user(ticket["user_id"])
         status_map = {
-            'open': '🟡 Открыта',
-            'in_progress': '🟠 В работе',
-            'resolved': '🟢 Решена',
-            'closed': '🔴 Закрыта'
+            "open": "🟡 Открыта",
+            "in_progress": "🟠 В работе",
+            "resolved": "🟢 Решена",
+            "closed": "🔴 Закрыта",
         }
 
         response = (
@@ -95,8 +98,8 @@ async def handle_ticket_command(message: Message):
 @router.message(F.text.startswith("/open_"))
 async def set_open_status(message: Message, bot: Bot):
     try:
-        ticket_id = int(message.text.split('_')[1])
-        await change_status(message, ticket_id, 'open', bot)
+        ticket_id = int(message.text.split("_")[1])
+        await change_status(message, ticket_id, "open", bot)
     except (IndexError, ValueError):
         pass
 
@@ -104,8 +107,8 @@ async def set_open_status(message: Message, bot: Bot):
 @router.message(F.text.startswith("/progress_"))
 async def set_progress_status(message: Message, bot: Bot):
     try:
-        ticket_id = int(message.text.split('_')[1])
-        await change_status(message, ticket_id, 'in_progress', bot)
+        ticket_id = int(message.text.split("_")[1])
+        await change_status(message, ticket_id, "in_progress", bot)
     except (IndexError, ValueError):
         pass
 
@@ -113,8 +116,8 @@ async def set_progress_status(message: Message, bot: Bot):
 @router.message(F.text.startswith("/resolve_"))
 async def set_resolved_status(message: Message, bot: Bot):
     try:
-        ticket_id = int(message.text.split('_')[1])
-        await change_status(message, ticket_id, 'resolved', bot)
+        ticket_id = int(message.text.split("_")[1])
+        await change_status(message, ticket_id, "resolved", bot)
     except (IndexError, ValueError):
         pass
 
@@ -122,8 +125,8 @@ async def set_resolved_status(message: Message, bot: Bot):
 @router.message(F.text.startswith("/close_"))
 async def set_closed_status(message: Message, bot: Bot):
     try:
-        ticket_id = int(message.text.split('_')[1])
-        await change_status(message, ticket_id, 'closed', bot)
+        ticket_id = int(message.text.split("_")[1])
+        await change_status(message, ticket_id, "closed", bot)
     except (IndexError, ValueError):
         pass
 
@@ -141,4 +144,3 @@ async def add_admin_command(message: Message):
         await message.reply(f"✅ Пользователь {new_admin_id} добавлен в админы")
     except Exception as e:
         await message.reply(f"⚠️ Ошибка: {str(e)}")
-

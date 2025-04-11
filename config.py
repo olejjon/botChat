@@ -12,13 +12,14 @@ class Config:
     def _sync_admins(self):
         """Синхронизирует админов при запуске"""
         from database.crud import Database
-        db = Database('support_bot.db')
+
+        db = Database("support_bot.db")
         db.sync_admins(self.ADMINS)
         logging.info(f"Синхронизированы админы: {self.ADMINS}")
 
     @property
     def ADMINS(self):
-        admins = os.getenv('ADMINS', '').split(',')
+        admins = os.getenv("ADMINS", "").split(",")
         return list(map(int, filter(None, admins)))
 
     BOT_TOKEN = os.getenv("BOT_TOKEN")
