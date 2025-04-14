@@ -69,7 +69,6 @@ async def process_phone(message: types.Message, state: FSMContext):
     await state.update_data(phone=message.text)
     data = await state.get_data()
 
-    # Создаем клавиатуру для подтверждения
     builder = ReplyKeyboardBuilder()
     builder.add(KeyboardButton(text="Да"))
     builder.add(KeyboardButton(text="Нет"))
@@ -93,7 +92,6 @@ async def process_confirmation(message: types.Message, state: FSMContext):
     if message.text.lower() == "да":
         data = await state.get_data()
 
-        # Сохраняем пользователя в базу данных
         db.cursor.execute(
             "INSERT OR REPLACE INTO users "
             "(user_id, first_name, last_name, company, phone, market) "
@@ -109,7 +107,6 @@ async def process_confirmation(message: types.Message, state: FSMContext):
         )
         db.conn.commit()
 
-        # Отправляем уведомление в канал дежурства
         admin_message = (
             f"Новый пользователь:\n"
             f"Имя: {data['first_name']} {data['last_name']}\n"

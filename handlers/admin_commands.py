@@ -13,15 +13,12 @@ async def verify_admin(message: Message) -> bool:
     """Проверяет и синхронизирует права администратора"""
     user_id = message.from_user.id
 
-    # Проверяем наличие в списке ADMINS из .env
     if user_id in Config().ADMINS:
-        # Если есть в .env, но нет в БД - добавляем
         if not db.is_admin(user_id):
             db.add_admin(user_id)
             logging.info(f"Обновлены права админа для {user_id}")
         return True
 
-    # Проверяем наличие прав в БД
     return db.is_admin(user_id)
 
 async def change_status(message: Message, ticket_id: int, new_status: str, bot: Bot):
@@ -35,7 +32,6 @@ async def change_status(message: Message, ticket_id: int, new_status: str, bot: 
             await message.reply(f"❌ Заявка #{ticket_id} не найдена")
             return
 
-        old_status = db.get_ticket_details(ticket_id)['status']
         db.update_ticket_status(ticket_id, new_status, bot)
 
         status_names = {
@@ -91,7 +87,6 @@ async def handle_ticket_command(message: Message):
         await message.reply(f"⚠️ Ошибка: {str(e)}")
 
 
-# Обработчики команд изменения статуса
 @router.message(F.text.startswith("/open_"))
 async def set_open_status(message: Message, bot: Bot):
     try:

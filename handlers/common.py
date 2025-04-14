@@ -15,16 +15,13 @@ async def cmd_start(message: types.Message, state: FSMContext):
     """Обработчик команды /start с полной логикой"""
     user_id = message.from_user.id
 
-    # Проверяем, зарегистрирован ли пользователь
     user = db.get_user(user_id)
 
-    # Создаем клавиатуру
     builder = ReplyKeyboardBuilder()
     builder.add(KeyboardButton(text="/new - Новая заявка"))
     builder.add(KeyboardButton(text="/status - Мои заявки"))
 
     if user:
-        # Пользователь зарегистрирован
         builder.add(KeyboardButton(text="/renew - Обновить данные"))
 
         await message.answer(
@@ -42,7 +39,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
             reply_markup=builder.as_markup(resize_keyboard=True),
         )
     else:
-        # Новый пользователь
         builder.add(KeyboardButton(text="/renew - Зарегистрироваться"))
 
         await message.answer(

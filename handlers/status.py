@@ -27,7 +27,7 @@ class CommentStates(StatesGroup):
 @router.message(F.text == "📋 Мои заявки")
 async def handle_my_tickets_button(message: types.Message):
     """Обработчик кнопки 'Мои заявки'"""
-    await cmd_status(message)  # Вызываем тот же обработчик, что и для команды /status
+    await cmd_status(message)
 
 
 def format_status(status):
@@ -53,14 +53,7 @@ async def cmd_status(message: types.Message):
         return
 
     kb = InlineKeyboardBuilder()
-    for ticket in tickets:
-        created_at = datetime.strptime(ticket["created_at"], "%Y-%m-%d %H:%M:%S")
-        kb.button(
-            text=f"#{ticket['ticket_id']} - {created_at.strftime('%d.%m %H:%M')}",
-            callback_data=f"view_{ticket['ticket_id']}",
-        )
-    kb.button(text="🏠 На главную", callback_data="back_to_main")
-    kb.adjust(2, 1)
+    keybord(tickets, kb)
 
     await message.answer(
         "📋 Ваши задачи. Выберите для просмотра:", reply_markup=kb.as_markup()
@@ -85,21 +78,17 @@ async def show_ticket_details(bot: Bot, chat_id: int, message_id: int, ticket_id
             f"<b>Сообщения:</b>\n"
         )
 
-        # Добавляем текст сообщений
         for msg in messages:
             if msg["text"]:
                 text += f"• {msg['text']}\n"
 
-        # Если есть фото, отправляем их медиагруппой
         if photos:
             try:
-                # Удаляем старое сообщение
                 try:
                     await bot.delete_message(chat_id, message_id)
                 except:
                     pass
 
-                # Создаем медиагруппу
                 media = []
                 first_photo = True
 
@@ -117,14 +106,11 @@ async def show_ticket_details(bot: Bot, chat_id: int, message_id: int, ticket_id
                             )
                             first_photo = False
                         else:
-                            # Остальные фото без текста
                             media.append(InputMediaPhoto(media=FSInputFile(photo_path)))
 
                 if media:
-                    # Отправляем медиагруппу
                     await bot.send_media_group(chat_id=chat_id, media=media)
 
-                    # Создаем клавиатуру под фото
                     kb = InlineKeyboardBuilder()
                     kb.button(
                         text="📝 Добавить комментарий",
@@ -144,7 +130,6 @@ async def show_ticket_details(bot: Bot, chat_id: int, message_id: int, ticket_id
             except Exception as e:
                 logging.error(f"Ошибка отправки медиагруппы: {e}")
 
-        # Если фото нет или не удалось отправить медиагруппу
         kb = InlineKeyboardBuilder()
         kb.button(
             text="📝 Добавить комментарий", callback_data=f"add_comment_{ticket_id}"
@@ -192,13 +177,11 @@ async def view_ticket_details(callback: types.CallbackQuery, bot: Bot):
 async def back_to_main_handler(callback: types.CallbackQuery):
     """Обработчик кнопки 'На главную'"""
     try:
-        # Удаляем текущее сообщение
         try:
             await callback.message.delete()
         except:
             pass
 
-        # Отправляем основное меню
         await callback.message.answer("Главное меню:", reply_markup=get_main_keyboard())
 
     except Exception as e:
@@ -220,13 +203,11 @@ async def process_text_comment(message: types.Message, state: FSMContext, bot: B
         return
 
     try:
-        # 1. Добавляем сообщение в базу
         db.add_message_to_ticket(
             ticket_id=ticket_id, user_id=message.from_user.id, text=message.text
         )
         db.update_ticket_timestamp(ticket_id)
 
-        # 2. Отправляем комментарий в чат поддержки
         await bot.send_message(
             chat_id=Config.SUPPORT_CHANNEL,
             text=f"Комментарий к задаче #{ticket_id}:\n{message.text}",
@@ -235,7 +216,6 @@ async def process_text_comment(message: types.Message, state: FSMContext, bot: B
         # 3. Удаляем сообщение с просьбой отправить комментарий
         await message.delete()
 
-        # 4. Подтверждение пользователю
         confirm_msg = await message.answer(
             f"✅ Комментарий добавлен к заявке #{ticket_id}"
         )
@@ -260,7 +240,6 @@ async def process_photo_comment(message: types.Message, state: FSMContext, bot: 
     data = await state.get_data()
     ticket_id = data.get("ticket_id")
 
-    # Если ticket_id нет в состоянии, пробуем получить активную заявку
     if not ticket_id:
         active_ticket = db.get_active_ticket(message.from_user.id)
         if active_ticket:
@@ -279,24 +258,20 @@ async def process_photo_comment(message: types.Message, state: FSMContext, bot: 
         return
 
     try:
-        # 1. Сохраняем фото
         photo = message.photo[-1]
         photo_path = await save_photo(bot, photo, f"comment_{ticket_id}")
 
-        # 2. Получаем данные заявки и пользователя
         ticket = db.get_ticket_details(ticket_id)
         user = db.get_user(message.from_user.id)
 
         if not ticket or not user:
             raise Exception("Не найдены данные заявки или пользователя")
 
-        # 3. Добавляем в базу данных
         caption = message.caption or "Фото без описания"
         db.add_photo_to_ticket(ticket_id, photo_path)
         db.add_message_to_ticket(ticket_id, message.from_user.id, caption, photo_path)
         db.update_ticket_timestamp(ticket_id)
 
-        # 4. Формируем сообщение для поддержки
         support_text = (
             f"📸 Новое фото к задаче #{ticket_id}\n"
             f"От: {user['first_name']} {user['last_name']}\n"
@@ -306,7 +281,6 @@ async def process_photo_comment(message: types.Message, state: FSMContext, bot: 
         if caption != "Фото без описания":
             support_text += f"Комментарий: {caption}"
 
-        # 5. Отправляем в чат поддержки с повторными попытками
         max_retries = 3
         for attempt in range(max_retries):
             try:
@@ -323,10 +297,8 @@ async def process_photo_comment(message: types.Message, state: FSMContext, bot: 
                 await asyncio.sleep(2)
                 logging.warning(f"Попытка {attempt + 1} отправки фото: {e}")
 
-        # 6. Уведомляем пользователя
         confirm_msg = await message.answer(f"✅ Фото добавлено к заявке #{ticket_id}")
 
-        # 7. Обновляем просмотр заявки
         await show_ticket_details(
             bot=bot,
             chat_id=message.chat.id,
@@ -357,10 +329,8 @@ async def add_comment_start(callback: types.CallbackQuery, state: FSMContext):
 async def back_to_list_handler(callback: types.CallbackQuery):
     """Обработчик кнопки 'Назад к списку'"""
     try:
-        # 1. Удаляем текущее сообщение с деталями заявки
         await callback.message.delete()
 
-        # 2. Создаем новое сообщение со списком задач
         user_id = callback.from_user.id
         tickets = db.get_user_tickets(user_id)
 
@@ -370,18 +340,9 @@ async def back_to_list_handler(callback: types.CallbackQuery):
             )
             return
 
-        # 3. Формируем клавиатуру со списком задач
         kb = InlineKeyboardBuilder()
-        for ticket in tickets:
-            created_at = datetime.strptime(ticket["created_at"], "%Y-%m-%d %H:%M:%S")
-            kb.button(
-                text=f"#{ticket['ticket_id']} - {created_at.strftime('%d.%m %H:%M')}",
-                callback_data=f"view_{ticket['ticket_id']}",
-            )
-        kb.button(text="🏠 На главную", callback_data="back_to_main")
-        kb.adjust(2, 1)
+        keybord(tickets, kb)
 
-        # 4. Отправляем новое сообщение со списком
         await callback.message.answer(
             "📋 Ваши задачи. Выберите для просмотра:", reply_markup=kb.as_markup()
         )
@@ -391,3 +352,14 @@ async def back_to_list_handler(callback: types.CallbackQuery):
         await callback.answer("Произошла ошибка", show_alert=True)
     finally:
         await callback.answer()
+
+
+def keybord(tickets, kb):
+    for ticket in tickets:
+        created_at = datetime.strptime(ticket["created_at"], "%Y-%m-%d %H:%M:%S")
+        kb.button(
+            text=f"#{ticket['ticket_id']} - {created_at.strftime('%d.%m %H:%M')}",
+            callback_data=f"view_{ticket['ticket_id']}",
+        )
+    kb.button(text="🏠 На главную", callback_data="back_to_main")
+    kb.adjust(2, 1)

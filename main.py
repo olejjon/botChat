@@ -1,13 +1,10 @@
 import logging
 from aiogram import Bot, Dispatcher
-from config import Config
 from database.crud import Database
 
-# Импортируем роутеры
 from handlers import common, registration, tickets, status, admin_commands
 
 from config import Config
-# Принудительно инициализируем синхронизацию
 config = Config()
 
 logging.basicConfig(level=logging.INFO)
@@ -19,7 +16,6 @@ db = Database("support_bot.db")
 db.sync_admins(Config().ADMINS)
 
 
-# Регистрируем роутеры
 dp.include_router(common.router)
 dp.include_router(registration.router)
 dp.include_router(tickets.router)

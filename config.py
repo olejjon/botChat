@@ -26,5 +26,4 @@ class Config:
     DUTY_CHANNEL = os.getenv("DUTY_CHANNEL")
     PHOTOS_DIR = "photos"
 
-    # Создаем папку для фото
     os.makedirs(PHOTOS_DIR, exist_ok=True)
